@@ -3,30 +3,43 @@
 import UrlForm from "@/components/UrlForm";
 import { useState } from "react";
 import { XLogo, GithubLogo } from "@phosphor-icons/react";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { LineShadowText } from "@/components/magicui/line-shadow-text";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useExtraction } from "@/hooks/extraction";
 
 export default function Home() {
-  const [error] = useState<string | null>(null);
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
   const router = useRouter();
+  const { extractFromUrl, loading, error } = useExtraction();
 
   // Get the launch post URL from environment variable
   const launchPostUrl = process.env.NEXT_PUBLIC_LAUNCH_POST_URL || "https://twitter.com";
   const githubUrl = process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/yourusername/yt-operator";
   const xAccountUrl = process.env.NEXT_PUBLIC_X_ACCOUNT_URL || "https://twitter.com/yourusername";
 
-  const handleUrlSubmit = (url: string) => {
-    setCurrentUrl(url);
-    // Navigate to annotation page with URL parameter
-    router.push(`/annotation?url=${encodeURIComponent(url)}`);
+  const handleUrlSubmit = async (url: string) => {
+    try {
+      setCurrentUrl(url);
+      // Process the URL
+      const success = await extractFromUrl(url);
+      
+      // Only navigate after successful processing and data is set
+      if (success) {
+        setTimeout(() => {
+          router.push('/annotation');
+        }, 100); // Small delay to ensure state is updated
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to process URL');
+      setCurrentUrl(null);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col">
+    <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col overflow-y-scroll scrollbar-hide">
       <Toaster 
         theme="dark" 
         position="top-center"
@@ -49,16 +62,16 @@ export default function Home() {
             className="text-center space-y-4 md:space-y-5 mb-6 md:mb-10"
           >
             <div className="inline-block mb-2">
-                <a 
-                  href={launchPostUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ShimmerButton className="inline-flex items-center px-3 py-1 rounded-full border border-zinc-700/50 text-xs font-medium text-zinc-300">
-                    <XLogo className="h-3.5 w-3.5 mr-1.5 text-zinc-400" />
-                    Launch Post
-                  </ShimmerButton>
-                </a>
+              <a 
+                href={launchPostUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ShimmerButton className="inline-flex items-center px-3 py-1 rounded-full border border-zinc-700/50 text-xs font-medium text-zinc-300">
+                  <XLogo className="h-3.5 w-3.5 mr-1.5 text-zinc-400" />
+                  Launch Post
+                </ShimmerButton>
+              </a>
             </div>
             <h1 className="text-balance text-4xl font-semibold leading-none tracking-tighter sm:text-5xl md:text-6xl lg:text-8xl">
               <LineShadowText className="italic" shadowColor="white">
@@ -78,34 +91,33 @@ export default function Home() {
             className="pt-5 md:pt-7"
           >
             <div className="relative">
-              <UrlForm onSubmit={handleUrlSubmit} currentUrl={currentUrl} />
-              
-              {/* Current URL display - Positioned absolutely */}
-              {currentUrl && (
-                <div className="absolute w-full text-center mt-1">
-                  <button 
-                    onClick={() => setCurrentUrl(null)}
-                    className="text-xs text-zinc-400 hover:text-zinc-300 underline"
-                  >
-                    Reset results
-                  </button>
+              {loading ? (
+                <div className="text-center space-y-4">
+                  <h2 className="text-xl font-semibold text-zinc-200">Processing Paper</h2>
+                  <div className="animate-pulse flex flex-col items-center gap-4">
+                    <div className="h-8 w-8 border-4 border-zinc-400 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-zinc-400 text-sm">This may take a few moments...</p>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <UrlForm onSubmit={handleUrlSubmit} currentUrl={currentUrl} />
+                  
+                  {/* Current URL display - Positioned absolutely */}
+                  {currentUrl && (
+                    <div className="absolute w-full text-center mt-1">
+                      <button 
+                        onClick={() => setCurrentUrl(null)}
+                        className="text-xs text-zinc-400 hover:text-zinc-300 underline"
+                      >
+                        Reset results
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </motion.div>
-
-          {/* Error Display */}
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="mt-4"
-            >
-              <div className="bg-[#121212] rounded-xl overflow-hidden border border-red-500/20 p-2.5 text-red-400 text-xs">
-                {error}
-              </div>
-            </motion.div>
-          )}
 
           {/* Features Section */}
           <motion.div 

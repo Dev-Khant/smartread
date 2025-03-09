@@ -1,28 +1,55 @@
 "use client";
 
-import { XLogo, GithubLogo, ArrowLeft } from "@phosphor-icons/react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState } from 'react';
+import { ArrowLeft } from "@phosphor-icons/react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { useExtraction } from "@/hooks/extraction";
+import PaperViewer from '@/components/PaperViewer';
+import { ProcessedPaperData, processPaperData } from '@/utils/paperProcessor';
 
-export default function Annotation() {
-  // Get the URL from search params
-  const searchParams = useSearchParams();
+export default function AnnotationPage() {
   const router = useRouter();
-  const url = searchParams.get("url");
+  const { data, reset } = useExtraction();
+  const [processedPaperData, setProcessedPaperData] = useState<ProcessedPaperData | null>(null);
 
-  // Get the launch post URL from environment variable
-  const githubUrl = process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/yourusername/yt-operator";
-  const xAccountUrl = process.env.NEXT_PUBLIC_X_ACCOUNT_URL || "https://twitter.com/yourusername";
+  useEffect(() => {
+    if (!data) {
+      router.push('/');
+      return;
+    }
+
+    // Process the paper data when it's available
+    const processed = processPaperData(data);
+    setProcessedPaperData(processed);
+  }, [data, router]);
+
+  const handleBack = () => {
+    reset(); // Reset the extraction state
+    router.push('/');
+  };
+
+  // Don't render anything if no data
+  if (!data || !processedPaperData) {
+    return (
+      <div className="min-h-screen bg-[#0f0f0f] text-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">No Paper Data Found</h1>
+          <p className="text-zinc-400">Please upload a paper first.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col">
       {/* Back button */}
       <motion.button
-        onClick={() => router.push('/')}
+        onClick={handleBack}
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.5, duration: 0.3 }}
-        className="absolute top-6 left-6 p-3 rounded-full bg-zinc-800/50 hover:bg-zinc-800 transition-colors group"
+        className="fixed top-6 left-6 p-3 rounded-full bg-zinc-800/50 hover:bg-zinc-800 transition-colors group z-50"
         aria-label="Go back to home"
       >
         <ArrowLeft 
@@ -31,57 +58,10 @@ export default function Annotation() {
         />
       </motion.button>
 
-      {/* Main content area with flex-grow to push footer down */}
-      <main className="flex-grow flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold">Processing Paper</h1>
-          {url && (
-            <p className="text-zinc-400 text-sm max-w-md mx-auto break-all">
-              {url}
-            </p>
-          )}
-        </div>
+      {/* Main content */}
+      <main className="flex-grow h-[calc(100vh-2rem)] overflow-y-scroll scrollbar-hide py-4">
+        <PaperViewer data={processedPaperData} />
       </main>
-
-      {/* Footer */}
-      <footer className="w-full py-6 mt-auto">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <div className="flex items-center space-x-4">
-              <a 
-                href={githubUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-zinc-400 hover:text-zinc-300 transition-colors"
-                aria-label="GitHub Repository"
-              >
-                <GithubLogo className="w-5 h-5" />
-              </a>
-              <a 
-                href={xAccountUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-zinc-400 hover:text-zinc-300 transition-colors"
-                aria-label="X (Twitter) Account"
-              >
-                <XLogo className="w-5 h-5" />
-              </a>
-            </div>
-            <p className="text-center text-zinc-500 text-xs flex items-center justify-center ml-5">
-              © {new Date().getFullYear()} SmartRead <span className="mx-1">•</span> 
-              <a 
-                href={githubUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-zinc-400 hover:text-zinc-300 transition-colors"
-              >
-                Open Source
-              </a><span className="mx-1">•</span>
-              Built with ❤️ in India 🇮🇳
-            </p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
