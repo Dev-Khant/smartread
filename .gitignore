@@ -3,3 +3,8 @@ node_modules
 
 .env
 .next
+.venv
+
+__pycache__
+
+.DS_Store

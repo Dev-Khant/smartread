@@ -12,8 +12,8 @@ import { useExtraction } from "@/hooks/extraction";
 
 export default function Home() {
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
+  const { extractFromUrl, loading, error, data } = useExtraction();
   const router = useRouter();
-  const { extractFromUrl, loading, error } = useExtraction();
 
   // Get the launch post URL from environment variable
   const launchPostUrl = process.env.NEXT_PUBLIC_LAUNCH_POST_URL || "https://twitter.com";
@@ -23,17 +23,13 @@ export default function Home() {
   const handleUrlSubmit = async (url: string) => {
     try {
       setCurrentUrl(url);
-      // Process the URL
-      const success = await extractFromUrl(url);
-      
-      // Only navigate after successful processing and data is set
-      if (success) {
-        setTimeout(() => {
-          router.push('/annotation');
-        }, 100); // Small delay to ensure state is updated
+      const extractedData = await extractFromUrl(url);
+      if (extractedData) {
+        router.push('/annotation');
       }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to process URL');
+    } catch (error) {
+      console.error('Error extracting data:', error);
+      // Handle error appropriately
       setCurrentUrl(null);
     }
   };

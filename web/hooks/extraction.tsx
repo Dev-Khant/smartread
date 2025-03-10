@@ -1,14 +1,13 @@
-import { Mistral } from '@mistralai/mistralai';
 import { useState, useEffect } from 'react';
 
 export const useExtraction = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>(() => {
-    // Initialize data from localStorage if available
+    // Try to load initial data from localStorage
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('extractionData');
-      return saved ? JSON.parse(saved) : null;
+      const savedData = localStorage.getItem('extractionData');
+      return savedData ? JSON.parse(savedData) : null;
     }
     return null;
   });
@@ -17,8 +16,6 @@ export const useExtraction = () => {
   useEffect(() => {
     if (data) {
       localStorage.setItem('extractionData', JSON.stringify(data));
-    } else {
-      localStorage.removeItem('extractionData');
     }
   }, [data]);
 
@@ -27,38 +24,26 @@ export const useExtraction = () => {
       setLoading(true);
       setError(null);
       setData(null); // Reset data before new extraction
-      localStorage.removeItem('extractionData'); // Clear stored data
-      
-      const apiKey = process.env.NEXT_PUBLIC_MISTRAL_API_KEY;
-      if (!apiKey) {
-        throw new Error('Mistral API key is not configured');
-      }
+      localStorage.removeItem('extractionData'); // Clear previous data
 
-      const client = new Mistral({ apiKey });
-
-      // First check if the URL is valid
-      try {
-        new URL(url);
-      } catch {
-        throw new Error('Invalid URL provided');
-      }
-
-      const ocrResponse = await client.ocr.process({
-        model: "mistral-ocr-latest",
-        document: {
-          type: "document_url",
-          documentUrl: url
+      // Call the backend API
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/extract`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        includeImageBase64: true
+        body: JSON.stringify({ url }),
       });
 
-      if (!ocrResponse) {
-        throw new Error('No response received from Mistral API');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to extract content');
       }
 
-      console.log(ocrResponse);
-      setData(ocrResponse);
-      return ocrResponse;
+      const extractedData = await response.json();
+      console.log(extractedData);
+      setData(extractedData);
+      return extractedData;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to extract content';
       setError(errorMessage);
