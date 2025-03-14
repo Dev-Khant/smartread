@@ -74,8 +74,8 @@ export default function Home() {
                 SmartRead
               </LineShadowText>
             </h1>
-            <p className="text-sm md:text-base text-zinc-400 max-w-3xl mx-auto px-2">
-              AI tool that annotates research papers and shows related articles and videos for better understanding
+            <p className="text-sm md:text-base text-zinc-400 max-w-4xl mx-auto px-2">
+              AI tool that automatically annotates technical PDFs, and shows related articles and videos for better understanding
             </p>
           </motion.div>
 
@@ -135,7 +135,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="text-base md:text-lg font-medium text-zinc-200 mb-1 md:mb-2">Smart Annotation</h3>
-                    <p className="text-xs md:text-sm text-zinc-400">View key insights and important highlights from the paper</p>
+                    <p className="text-xs md:text-sm text-zinc-400">View key insights and important highlights from the pdf</p>
                   </div>
                 </div>
               </div>
@@ -164,8 +164,8 @@ export default function Home() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-base md:text-lg font-medium text-zinc-200 mb-1 md:mb-2">Research PDFs</h3>
-                    <p className="text-xs md:text-sm text-zinc-400">Works with any research paper PDF, making academic reading easier to understand</p>
+                    <h3 className="text-base md:text-lg font-medium text-zinc-200 mb-1 md:mb-2">Technical PDFs</h3>
+                    <p className="text-xs md:text-sm text-zinc-400">Works with any technical PDF, making technical reading easier to understand</p>
                   </div>
                 </div>
               </div>
@@ -180,7 +180,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="text-base md:text-lg font-medium text-zinc-200 mb-1 md:mb-2">Download Annotated PDF</h3>
-                    <p className="text-xs md:text-sm text-zinc-400">Save a copy of the annotated PDF to keep important notes and highlights</p>
+                    <p className="text-xs md:text-sm text-zinc-400">Save a copy of the annotated original PDF to keep highlights</p>
                   </div>
                 </div>
               </div>

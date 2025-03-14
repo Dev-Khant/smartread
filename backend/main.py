@@ -1,14 +1,17 @@
+import os
+import uvicorn
+from dotenv import load_dotenv
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from dotenv import load_dotenv
-import uvicorn
-import os
+
 from api.routes import router
 from api.swagger import custom_openapi
 
 # Load environment variables
 load_dotenv()
+
 
 def get_application() -> FastAPI:
     app = FastAPI(
@@ -16,14 +19,14 @@ def get_application() -> FastAPI:
         description="API for extracting and processing text from images using Mistral OCR",
         version="1.0.0",
         docs_url="/docs",
-        redoc_url="/redoc"
+        redoc_url="/redoc",
     )
 
     # Configure CORS with more permissive settings for development
     origins = [
-        "http://localhost:3000",      # React default port
+        "http://localhost:3000",  # React default port
         "http://127.0.0.1:3000",
-        "http://localhost:5173",      # Vite default port
+        "http://localhost:5173",  # Vite default port
         "http://127.0.0.1:5173",
     ]
 
@@ -55,10 +58,12 @@ def get_application() -> FastAPI:
 
     # Configure custom OpenAPI
     app.openapi = lambda: custom_openapi(app)
-    
+
     return app
 
+
 app = get_application()
+
 
 @app.options("/{path:path}")
 async def options_handler(path: str):
@@ -72,13 +77,14 @@ async def options_handler(path: str):
         },
     )
 
+
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host=str(os.getenv("HOST")),
         port=int(os.getenv("PORT")),
-        reload=True,           # Enable auto-reload
-        reload_dirs=["api"],   # Watch the api directory for changes
-        workers=1,             # Use single worker for development
-        log_level="debug"      # More detailed logging
+        reload=True,  # Enable auto-reload
+        reload_dirs=["api"],  # Watch the api directory for changes
+        workers=1,  # Use single worker for development
+        log_level="debug",  # More detailed logging
     )
