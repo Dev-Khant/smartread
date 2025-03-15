@@ -3,7 +3,7 @@
 import UrlForm from "@/components/UrlForm";
 import { useState } from "react";
 import { XLogo, GithubLogo } from "@phosphor-icons/react";
-import { Toaster, toast } from "sonner";
+import { Toaster } from "sonner";
 import { LineShadowText } from "@/components/magicui/line-shadow-text";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { motion } from "framer-motion";
@@ -12,7 +12,7 @@ import { useExtraction } from "@/hooks/extraction";
 
 export default function Home() {
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
-  const { extractFromUrl, loading, error, data } = useExtraction();
+  const { extractFromUrl, loading } = useExtraction();
   const router = useRouter();
 
   // Get the launch post URL from environment variable

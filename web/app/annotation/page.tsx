@@ -9,6 +9,12 @@ import { PaperContent } from "@/components/PaperContent";
 import { ResourceDisplay } from "@/components/ResourceDisplay";
 import { PageScrollBar } from "@/components/PageScrollBar";
 
+interface SearchParameters {
+  query: string;
+  maxResults?: number;
+  type?: string;
+}
+
 interface Resource {
   title: string;
   link: string;
@@ -23,8 +29,7 @@ interface ProcessedPaperData {
   abstract?: string;
   content?: string;
   total_pages?: number;
-  page?: {
-    index: number;
+  page: {
     content: string;
     images?: Array<{
       id: string;
@@ -33,10 +38,31 @@ interface ProcessedPaperData {
     resources?: {
       [key: string]: {
         articles: Resource[];
-        videos: Resource[] | { searchParameters: any; credits: number };
+        videos: Resource[] | { searchParameters: SearchParameters; credits: number };
       };
     };
   };
+}
+
+interface ExtractionData {
+  data: {
+    total_pages: number;
+    content: string;
+    page: {
+      content: string;
+      resources: {
+        [key: string]: {
+          articles: Resource[];
+          videos: Resource[] | { searchParameters: SearchParameters; credits: number };
+        };
+      };
+      images?: Array<{
+        id: string;
+        image_url: string;
+      }>;
+    };
+  };
+  isPageChange?: boolean;
 }
 
 export default function AnnotationPage() {
@@ -47,10 +73,7 @@ export default function AnnotationPage() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [selectedHighlight, setSelectedHighlight] = useState<string | null>(null);
   const [currentPageNumber, setCurrentPageNumber] = useState(1);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
-  const [totalPages, setTotalPages] = useState(0);
-  const [content, setContent] = useState('');
 
   // Process resources to handle both regular video arrays and search parameter objects
   const processResources = (index: string) => {
@@ -77,13 +100,10 @@ export default function AnnotationPage() {
         if (!data.isPageChange) {
           setCurrentPageNumber(1);
         }
-        setTotalPages(data.total_pages);
-        setContent(data.content);
         
         try {
           const processed = processPaperData(data);
           setProcessedPaperData(processed);
-          setInitialLoadDone(true);
         } catch (error) {
           console.error('Error processing paper data:', error);
         } finally {
@@ -106,8 +126,15 @@ export default function AnnotationPage() {
     router.push('/');
   };
 
-  const processPaperData = (data: any): ProcessedPaperData => {
-    if (!data?.data) return { title: '', abstract: '', content: '' };
+  const processPaperData = (data: ExtractionData): ProcessedPaperData => {
+    if (!data?.data) return {
+      title: '',
+      abstract: '',
+      content: '',
+      page: {
+        content: ''
+      }
+    };
     return {
       total_pages: data.data.total_pages,
       page: {

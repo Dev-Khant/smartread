@@ -1,82 +1,91 @@
 # SmartRead
 
-A modern web application with a Next.js frontend and FastAPI backend.
+SmartRead is an AI-powered tool designed to automatically annotate technical PDFs, providing key insights and important highlights. Additionally, it offers related articles and videos to enhance understanding.
 
-## Prerequisites
+## Features
 
-- Docker and Docker Compose installed on your system
-- Git (for cloning the repository)
+- **Smart Annotation**: View key insights and important highlights from the PDF
+- **Related Resources**: Get related articles and videos on selected technical highlights for improved understanding
+- **Technical PDFs**: Works with any technical PDF, making technical reading easier to understand
+- **Download Annotated PDF**: Save a copy of the annotated original PDF to keep highlights
 
-## Environment Setup
+## Technology Stack
 
-1. Clone the repository:
+- **Frontend**: Next.js with TypeScript
+- **Backend**: FastAPI (Python 3.12)
+- **Database**: MongoDB
+- **AI Models**: Mistral AI and Groq
+- **Storage**: Cloudinary
+- **Containerization**: Docker (backend only)
+
+## Getting Started
+
+### Prerequisites
+
+- Git
+- Node.js 18+ (for frontend)
+- Docker (for backend)
+- Python 3.12 (for local backend development)
+
+### Installation
+
 ```bash
+# Clone the repository
 git clone <repository-url>
 cd smartread
-```
 
-2. Set up environment variables:
-
-For the backend (`/backend/.env`):
-```bash
+# Set up environment variables
 cp backend/.env.example backend/.env
-# Edit backend/.env with your configuration
-```
-
-For the frontend (`/web/.env.local`):
-```bash
 cp web/.env.example web/.env.local
-# Edit web/.env.local with your configuration
 ```
 
-## Running the Application
+### Environment Setup
 
-### Using Individual Docker Images
-
-#### Backend (FastAPI)
-```bash
-# Build the backend image
-cd backend
-docker build -t smartread-backend .
-
-# Run in development mode (with hot reload)
-docker run -p 8000:8000 \
-  --env-file .env \
-  -v $(pwd):/app \
-  -v /app/__pycache__ \
-  smartread-backend
-
-# Run in production mode
-docker run -p 8000:8000 \
-  --env-file .env \
-  -e ENVIRONMENT=production \
-  smartread-backend
+#### Backend Variables (.env)
+```plaintext
+PORT=8000                    # API port
+HOST=0.0.0.0                # API host
+ENVIRONMENT=development      # development/production
+MONGODB_URL=mongodb://...    # MongoDB connection URL
+MISTRAL_API_KEY=            # Mistral AI API key
+GROQ_API_KEY=               # Groq API key
+CLOUDINARY_CLOUD_NAME=      # Cloudinary cloud name
+CLOUDINARY_API_KEY=         # Cloudinary API key
+CLOUDINARY_API_SECRET=      # Cloudinary API secret
 ```
+
+#### Frontend Variables (.env.local)
+```plaintext
+NEXT_PUBLIC_BACKEND_API_URL=http://localhost:8000  # Backend API URL
+```
+
+### Running the Application
 
 #### Frontend (Next.js)
+
 ```bash
-# Build the frontend image
+# Navigate to frontend directory
 cd web
-docker build -t smartread-frontend .
 
-# Run in development mode
-docker run -p 3000:3000 \
-  --env-file .env.local \
-  -v $(pwd):/app \
-  -v /app/node_modules \
-  -v /app/.next \
-  smartread-frontend
+# Install dependencies
+npm install
 
-# Run in production mode
-docker run -p 3000:3000 \
-  --env-file .env.local \
-  -e NODE_ENV=production \
-  smartread-frontend
+# Start development server
+npm run dev
 ```
 
-### Running Locally (Without Docker)
+The frontend will be available at http://localhost:3000
 
 #### Backend (FastAPI)
+
+Using Docker:
+```bash
+cd backend
+docker build -t smartread-backend .
+docker run -p 8000:8000 --env-file .env smartread-backend
+```
+
+Or for local development:
 ```bash
 cd backend
 python -m venv .venv
@@ -85,51 +94,28 @@ pip install -r requirements.txt
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-#### Frontend (Next.js)
-```bash
-cd web
-npm install
-npm run dev
-```
-
 ## Development
 
-- The backend runs on Python 3.12 with FastAPI
-- The frontend is built with Next.js and TypeScript
-- MongoDB is used as the database (in development mode)
-- Hot-reload is enabled for both frontend and backend in development mode
+The application is built with:
+- Next.js and TypeScript for the frontend
+- FastAPI (Python 3.12) for the backend
+- MongoDB for data storage
+- Mistral and Groq AI models for AI features
+- Cloudinary for media management
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is open source and available under the MIT License.
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Environment Variables
-
-### Backend Variables (`.env`)
-```plaintext
-PORT=8000                    # API port
-HOST=0.0.0.0                # API host
-ENVIRONMENT=development      # development/production
-MONGODB_URL=mongodb://...    # MongoDB connection URL
-MISTRAL_API_KEY=            # Mistral AI API key
-GROQ_API_KEY=               # Groq API key
-CLOUDINARY_*                # Cloudinary configuration
-```
-
-### Frontend Variables (`.env.local`)
-```plaintext
-NEXT_PUBLIC_BACKEND_API_URL=http://localhost:8000  # Backend API URL
-```
+- [Next.js Documentation](https://nextjs.org/docs)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [MongoDB Installation Documentation](https://www.mongodb.com/docs/manual/installation/)
+- [Cloudinary Documentation](https://cloudinary.com/documentation)
+- [Mistral AI OCR Documentation](https://docs.mistral.ai/capabilities/document/)
+- [Groq Documentation](https://console.groq.com/docs/overview)

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface PageScrollBarProps {
   currentPage: number;
@@ -60,7 +60,7 @@ export const PageScrollBar: React.FC<PageScrollBarProps> = ({
     
     // Calculate start and end pages to show
     let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
-    let endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
+    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
     
     // Adjust startPage if endPage is at max
     if (endPage === totalPages) {
