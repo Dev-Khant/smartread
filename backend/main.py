@@ -28,6 +28,7 @@ def get_application() -> FastAPI:
         "http://127.0.0.1:3000",
         "http://localhost:5173",  # Vite default port
         "http://127.0.0.1:5173",
+        "https://smartread-beta.vercel.app",
     ]
 
     if os.getenv("ENVIRONMENT") == "development":
