@@ -3,7 +3,7 @@
 import UrlForm from "@/components/UrlForm";
 import { useState } from "react";
 import { XLogo, GithubLogo } from "@phosphor-icons/react";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { LineShadowText } from "@/components/magicui/line-shadow-text";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { motion } from "framer-motion";
@@ -12,12 +12,13 @@ import { useExtraction } from "@/hooks/extraction";
 
 export default function Home() {
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
-  const { extractFromUrl, loading } = useExtraction();
+  const { extractFromUrl, loading, error } = useExtraction();
   const router = useRouter();
 
   // Get the launch post URL from environment variable
   const launchPostUrl = process.env.NEXT_PUBLIC_LAUNCH_POST_URL || "https://twitter.com";
-  const githubUrl = process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/yourusername/yt-operator";
+  const githubUrl = process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/Dev-Khant";
+  const repoUrl = process.env.NEXT_PUBLIC_REPO_URL || "https://github.com/Dev-Khant/smartread";
   const xAccountUrl = process.env.NEXT_PUBLIC_X_ACCOUNT_URL || "https://twitter.com/yourusername";
 
   const handleUrlSubmit = async (url: string) => {
@@ -29,7 +30,8 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error extracting data:', error);
-      // Handle error appropriately
+      // Show error using Toast
+      toast.error(error instanceof Error ? error.message : 'Failed to extract data. Please try again or use a different URL.');
       setCurrentUrl(null);
     }
   };
@@ -44,6 +46,9 @@ export default function Home() {
             background: "#121212",
             border: "1px solid rgba(63, 63, 70, 0.5)",
             color: "#e4e4e7"
+          },
+          classNames: {
+            error: "border-red-500/20 bg-[#121212] text-red-400"
           }
         }}
       />
@@ -216,7 +221,7 @@ export default function Home() {
             <p className="text-center text-zinc-500 text-xs flex items-center justify-center ml-5">
               © {new Date().getFullYear()} SmartRead <span className="mx-1">•</span> 
               <a 
-                href={githubUrl}
+                href={repoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-zinc-400 hover:text-zinc-300 transition-colors"

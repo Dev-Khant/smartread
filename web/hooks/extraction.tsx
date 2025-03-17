@@ -57,7 +57,8 @@ export const useExtraction = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to process request';
       setError(errorMessage);
-      throw new Error(errorMessage);
+      setData(null);
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -65,16 +66,25 @@ export const useExtraction = () => {
 
   const debouncedChangePage = useCallback(async (pageNumber: number) => {
     if (!currentUrl) {
-      throw new Error('No URL available for page change');
+      const error = new Error('No URL available for page change');
+      setError(error.message);
+      throw error;
     }
     return fetchData(currentUrl, pageNumber, true);
   }, [currentUrl]);
 
   const extractFromUrl = async (url: string) => {
-    setData(null);
-    localStorage.removeItem('extractionData');
-    setCurrentUrl(url);
-    return fetchData(url, 1, false);
+    try {
+      setData(null);
+      setError(null);
+      localStorage.removeItem('extractionData');
+      setCurrentUrl(url);
+      return await fetchData(url, 1, false);
+    } catch (err) {
+      // Clear the URL if extraction fails
+      setCurrentUrl(null);
+      throw err;
+    }
   };
 
   const reset = () => {

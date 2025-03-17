@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { ArrowLeft } from "@phosphor-icons/react";
+import { ArrowLeft, Warning, X } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useExtraction } from "@/hooks/extraction";
@@ -67,12 +67,13 @@ interface ExtractionData {
 
 export default function AnnotationPage() {
   const router = useRouter();
-  const { data, reset, changePage, loading, currentUrl } = useExtraction();
+  const { data, reset, changePage, loading, currentUrl, error } = useExtraction();
   const [processedPaperData, setProcessedPaperData] = useState<ProcessedPaperData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [selectedHighlight, setSelectedHighlight] = useState<string | null>(null);
   const [currentPageNumber, setCurrentPageNumber] = useState(1);
+  const [displayError, setDisplayError] = useState<string | null>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
   // Process resources to handle both regular video arrays and search parameter objects
@@ -104,8 +105,10 @@ export default function AnnotationPage() {
         try {
           const processed = processPaperData(data);
           setProcessedPaperData(processed);
+          setDisplayError(null);
         } catch (error) {
           console.error('Error processing paper data:', error);
+          setDisplayError('Failed to process paper data. Please try again or use a different URL.');
         } finally {
           // Make sure to turn off loading once data is processed
           setIsLoading(false);
@@ -116,10 +119,14 @@ export default function AnnotationPage() {
     loadInitialData();
   }, [data]);
 
-  // Sync with extraction loading state
+  // Sync with extraction loading state and error
   useEffect(() => {
     setIsLoading(loading);
-  }, [loading]);
+    if (error) {
+      setDisplayError(error);
+      setIsLoading(false);
+    }
+  }, [loading, error]);
 
   const handleBack = () => {
     reset();
@@ -146,6 +153,7 @@ export default function AnnotationPage() {
 
   const handlePageChange = useCallback(async (pageNumber: number) => {
     try {
+      setDisplayError(null);
       console.log('AnnotationPage: Handling page change to:', pageNumber);
       if (pageNumber === currentPageNumber || pageNumber < 1 || pageNumber > (processedPaperData?.total_pages || 1)) {
         console.log('AnnotationPage: Invalid page number or same page, skipping');
@@ -184,6 +192,7 @@ export default function AnnotationPage() {
       }
     } catch (error) {
       console.error('AnnotationPage: Error changing page:', error);
+      setDisplayError(error instanceof Error ? error.message : 'Failed to change page. Please try again.');
       throw error;
     } finally {
       // Small delay before removing loading state for smoother transitions
@@ -197,6 +206,7 @@ const handleDownload = async () => {
   if (!currentUrl) return;
   try {
     setIsDownloading(true);
+    setDisplayError(null);
     const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/pdf/download`, {
       method: 'POST',
       headers: {
@@ -217,6 +227,7 @@ const handleDownload = async () => {
     }
   } catch (error) {
     console.error('Error downloading PDF:', error);
+    setDisplayError('Failed to download PDF. Please try again later.');
   } finally {
     setIsDownloading(false);
   }
@@ -233,7 +244,7 @@ const handleDownload = async () => {
     );
   }
 
-  if (!processedPaperData) {
+  if (!processedPaperData && !isLoading && !error) {
     return (
       <div className="min-h-screen bg-[#0f0f0f] text-white flex items-center justify-center">
         <div className="text-center">
@@ -249,6 +260,29 @@ const handleDownload = async () => {
       </div>
     );
   }
+
+  if (!processedPaperData && !isLoading && error) {
+    return (
+      <div className="min-h-screen bg-[#0f0f0f] text-white flex items-center justify-center">
+        <div className="text-center max-w-lg">
+          <div className="flex justify-center mb-4">
+            <Warning size={48} className="text-red-500" weight="duotone" />
+          </div>
+          <h1 className="text-2xl font-bold mb-4">Unable to Load Paper</h1>
+          <div className="px-6 py-4 bg-[#121212] rounded-xl border border-red-500/20 text-red-400 text-sm mb-6">
+            {error}
+          </div>
+          <button
+            onClick={() => router.push('/')}
+            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm text-zinc-200 transition-colors"
+          >
+            Try with a Different URL
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   console.log("currentPageNumber", currentPageNumber);
 
   return (
@@ -266,6 +300,27 @@ const handleDownload = async () => {
           weight="bold"
         />
       </motion.button>
+
+      {/* Error Toast */}
+      <AnimatePresence>
+        {displayError && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 bg-[#121212] rounded-xl border border-red-500/20 text-red-400 text-sm shadow-xl max-w-lg flex items-center gap-3"
+          >
+            <Warning className="w-5 h-5 flex-shrink-0" weight="fill" />
+            <p>{displayError}</p>
+            <button 
+              onClick={() => setDisplayError(null)}
+              className="ml-auto p-1 rounded-full hover:bg-zinc-800/70"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <main 
         ref={mainContentRef}
