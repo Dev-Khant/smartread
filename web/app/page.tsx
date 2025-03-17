@@ -12,7 +12,7 @@ import { useExtraction } from "@/hooks/extraction";
 
 export default function Home() {
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
-  const { extractFromUrl, loading, error } = useExtraction();
+  const { extractFromUrl, loading } = useExtraction();
   const router = useRouter();
 
   // Get the launch post URL from environment variable
