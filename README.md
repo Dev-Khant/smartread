@@ -2,6 +2,10 @@
 
 SmartRead is an AI-powered tool designed to automatically annotate technical PDFs, providing key insights and important highlights. Additionally, it offers related articles and videos to enhance understanding.
 
+
+https://github.com/user-attachments/assets/3644033c-8953-4d22-8d32-697b60b28afe
+
+
 ## Features
 
 - **Smart Annotation**: View key insights and important highlights from the PDF
