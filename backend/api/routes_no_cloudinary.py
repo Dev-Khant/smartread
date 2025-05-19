@@ -20,9 +20,9 @@ from .models import (
     DownloadPDFRequest,
 )
 from utils.extraction import extract_data, extract_highlights, format_to_html
-from utils.search import prepare_resources
+from utils.search_no_cloudinary import prepare_resources
 from utils.db import store_page, get_page, check_page_exists, get_highlights
-from utils.cloudinary_utils import init_cloudinary, upload_to_cloudinary
+from utils.storage_local import init_local_storage, save_to_local_storage
 from utils.download import download_and_highlight_pdf
 
 
@@ -34,8 +34,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Initialize Cloudinary
-init_cloudinary()
+# Initialize local storage
+init_local_storage()
 
 
 @router.get(
@@ -46,7 +46,7 @@ init_cloudinary()
     description="Check if the API is running",
 )
 async def root():
-    return HealthCheck(status="ok", message="Welcome to SmartRead API")
+    return HealthCheck(status="ok", message="Welcome to SmartRead API (No Cloudinary)")
 
 
 async def process_single_page(page, url: str, total_pages: int) -> None:
@@ -65,20 +65,24 @@ async def process_single_page(page, url: str, total_pages: int) -> None:
         page_images = []
         for image in page.images:
             image_uuid = str(uuid.uuid4())
-            cloudinary_img_url = upload_to_cloudinary(
+            # Save image locally instead of Cloudinary
+            local_img_url = save_to_local_storage(
                 image.image_base64,
-                f"url_{url}_page_{page.index}_image_{image_uuid}",
+                f"url_{hash(url)}_page_{page.index}_image_{image_uuid}",
+                file_type="image"
             )
-            page_images.append(
-                Images(
-                    id=image.id,
-                    top_left_x=image.top_left_x,
-                    top_left_y=image.top_left_y,
-                    bottom_right_x=image.bottom_right_x,
-                    bottom_right_y=image.bottom_right_y,
-                    image_url=cloudinary_img_url,
+            
+            if local_img_url:
+                page_images.append(
+                    Images(
+                        id=image.id,
+                        top_left_x=image.top_left_x,
+                        top_left_y=image.top_left_y,
+                        bottom_right_x=image.bottom_right_x,
+                        bottom_right_y=image.bottom_right_y,
+                        image_url=f"http://localhost:8000{local_img_url}",  # Full URL for frontend
+                    )
                 )
-            )
 
         page_obj = Page(
             index=page_number,
@@ -163,20 +167,24 @@ async def extract_from_url(request: URLRequest, background_tasks: BackgroundTask
             page_images = []
             for image in first_page.images:
                 image_uuid = str(uuid.uuid4())
-                cloudinary_img_url = upload_to_cloudinary(
+                # Save image locally instead of Cloudinary
+                local_img_url = save_to_local_storage(
                     image.image_base64,
-                    f"url_{request.url}_page_{first_page.index}_image_{image_uuid}",
+                    f"url_{hash(request.url)}_page_{first_page.index}_image_{image_uuid}",
+                    file_type="image"
                 )
-                page_images.append(
-                    Images(
-                        id=image.id,
-                        top_left_x=image.top_left_x,
-                        top_left_y=image.top_left_y,
-                        bottom_right_x=image.bottom_right_x,
-                        bottom_right_y=image.bottom_right_y,
-                        image_url=cloudinary_img_url,
+                
+                if local_img_url:
+                    page_images.append(
+                        Images(
+                            id=image.id,
+                            top_left_x=image.top_left_x,
+                            top_left_y=image.top_left_y,
+                            bottom_right_x=image.bottom_right_x,
+                            bottom_right_y=image.bottom_right_y,
+                            image_url=f"http://localhost:8000{local_img_url}",
+                        )
                     )
-                )
 
             page_obj = Page(
                 index=first_page_number,
@@ -251,17 +259,29 @@ async def download_pdf(request: DownloadPDFRequest):
                         status_code=400, detail="Failed to download PDF"
                     )
 
-            # Upload to Cloudinary
-            pdf_url = upload_to_cloudinary(
+            # Save to local storage instead of Cloudinary
+            pdf_url = save_to_local_storage(
                 highlighted_pdf_path,
-                f"{'_'.join(original_filename.split('.')[:-1])}",
+                f"{'_'.join(original_filename.split('.')[:-1])}_highlighted",
                 file_type="pdf",
             )
-
-            return {
-                "status": "success",
-                "message": "PDF Ready",
-                "data": {"pdf_url": pdf_url},
-            }
+            
+            if pdf_url:
+                full_pdf_url = f"http://localhost:8000{pdf_url}"
+                return {
+                    "status": "success",
+                    "message": "PDF Ready",
+                    "data": {"pdf_url": full_pdf_url},
+                }
+            else:
+                raise HTTPException(status_code=500, detail="Failed to save PDF")
+                
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Serve static files
+from fastapi.staticfiles import StaticFiles
+
+# Mount static files directory
+router.mount("/storage", StaticFiles(directory="storage"), name="storage")
