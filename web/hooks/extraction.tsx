@@ -87,6 +87,47 @@ export const useExtraction = () => {
     }
   };
 
+  // Upload a PDF file to the backend and return the hosted URL
+  const uploadFile = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to upload PDF');
+    }
+
+    const result = await response.json();
+    return result.data.url;
+  };
+
+  const extractFromFile = async (file: File) => {
+    try {
+      setLoading(true);
+      setData(null);
+      setError(null);
+      localStorage.removeItem('extractionData');
+
+      const url = await uploadFile(file);
+      setCurrentUrl(url);
+      return await fetchData(url, 1, false);
+    } catch (err) {
+      // Clear the URL if upload or extraction fails
+      setCurrentUrl(null);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to process file';
+      setError(errorMessage);
+      setData(null);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const reset = () => {
     setLoading(false);
     setError(null);
@@ -98,6 +139,8 @@ export const useExtraction = () => {
 
   return {
     extractFromUrl,
+    extractFromFile,
+    uploadFile,
     changePage: debouncedChangePage,
     loading,
     error,

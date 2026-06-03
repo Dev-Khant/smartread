@@ -12,7 +12,7 @@ import { useExtraction } from "@/hooks/extraction";
 
 export default function Home() {
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
-  const { extractFromUrl, loading } = useExtraction();
+  const { extractFromUrl, extractFromFile, loading } = useExtraction();
   const router = useRouter();
 
   // Get the launch post URL from environment variable
@@ -32,6 +32,21 @@ export default function Home() {
       console.error('Error extracting data:', error);
       // Show error using Toast
       toast.error(error instanceof Error ? error.message : 'Failed to extract data. Please try again or use a different URL.');
+      setCurrentUrl(null);
+    }
+  };
+
+  const handleFileSubmit = async (file: File) => {
+    try {
+      setCurrentUrl(file.name);
+      const extractedData = await extractFromFile(file);
+      if (extractedData) {
+        router.push('/annotation');
+      }
+    } catch (error) {
+      console.error('Error extracting data:', error);
+      // Show error using Toast
+      toast.error(error instanceof Error ? error.message : 'Failed to extract data. Please try again or use a different file.');
       setCurrentUrl(null);
     }
   };
@@ -102,7 +117,7 @@ export default function Home() {
                 </div>
               ) : (
                 <>
-                  <UrlForm onSubmit={handleUrlSubmit} currentUrl={currentUrl} />
+                  <UrlForm onSubmit={handleUrlSubmit} onFileSubmit={handleFileSubmit} currentUrl={currentUrl} />
                   
                   {/* Current URL display - Positioned absolutely */}
                   {currentUrl && (
