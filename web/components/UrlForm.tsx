@@ -1,13 +1,16 @@
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useRef, DragEvent, ChangeEvent } from 'react';
 
 interface UrlFormProps {
   onSubmit: (url: string) => void;
+  onFileSubmit: (file: File) => void;
   currentUrl: string | null;
 }
 
-const UrlForm: React.FC<UrlFormProps> = ({ onSubmit, currentUrl }) => {
+const UrlForm: React.FC<UrlFormProps> = ({ onSubmit, onFileSubmit, currentUrl }) => {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!currentUrl) {
@@ -54,6 +57,43 @@ const UrlForm: React.FC<UrlFormProps> = ({ onSubmit, currentUrl }) => {
     setUrl('');
   };
 
+  const handleFile = (file: File) => {
+    setError('');
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    if (!isPdf) {
+      setError('Please upload a PDF file');
+      return;
+    }
+    onFileSubmit(file);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFile(file);
+    }
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFile(file);
+    }
+    e.target.value = '';
+  };
+
   return (
     <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
       <div className="relative overflow-hidden rounded-xl bg-[#121212] border border-zinc-800/80 focus-within:border-zinc-500/60">
@@ -89,6 +129,49 @@ const UrlForm: React.FC<UrlFormProps> = ({ onSubmit, currentUrl }) => {
           </div>
         </div>
       )}
+      <div className="mt-4">
+        <div className="relative flex items-center justify-center">
+          <div className="flex-grow h-[1px] bg-zinc-800/80"></div>
+          <span className="px-3 text-xs text-zinc-500">or</span>
+          <div className="flex-grow h-[1px] bg-zinc-800/80"></div>
+        </div>
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          role="button"
+          tabIndex={0}
+          aria-label="Upload a PDF by dragging and dropping or clicking to browse"
+          className={`mt-3 cursor-pointer rounded-xl border border-dashed px-6 py-8 text-center transition-colors ${
+            isDragging
+              ? 'border-blue-500/60 bg-blue-500/5'
+              : 'border-zinc-800/80 bg-[#121212] hover:border-zinc-600/60'
+          }`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            onChange={handleFileInputChange}
+            className="hidden"
+            aria-hidden="true"
+          />
+          <svg
+            className="mx-auto mb-3 h-7 w-7 text-zinc-500"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <p className="text-sm text-zinc-300">
+            <span className="font-medium text-zinc-200">Drag &amp; drop</span> a PDF here, or{' '}
+            <span className="text-blue-400">click to browse</span>
+          </p>
+          <p className="mt-1 text-xs text-zinc-500">PDF files up to 20MB</p>
+        </div>
+      </div>
       <div className="mt-4 flex justify-center gap-4">
         {Object.entries(exampleUrls).map(([name, url]) => (
           <button

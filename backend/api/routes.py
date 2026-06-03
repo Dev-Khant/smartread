@@ -7,7 +7,7 @@ from tqdm import tqdm
 from copy import deepcopy
 
 from fastapi.responses import JSONResponse
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, UploadFile, File
 from urllib.parse import urlparse
 from .models import (
     URLRequest,
@@ -220,6 +220,61 @@ async def extract_from_url(request: URLRequest, background_tasks: BackgroundTask
             },
         )
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/api/upload",
+    response_model=APIResponse,
+    responses={
+        200: {"description": "Successfully uploaded the PDF"},
+        400: {"model": ErrorResponse, "description": "Invalid file provided"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+    tags=["PDF"],
+    summary="Upload PDF",
+    description="Upload a PDF file, host it, and return a URL that can be passed to /api/extract",
+)
+async def upload_pdf(file: UploadFile = File(...)):
+    try:
+        filename = file.filename or "document.pdf"
+        is_pdf = filename.lower().endswith(".pdf") or file.content_type == "application/pdf"
+        if not is_pdf:
+            raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+        contents = await file.read()
+        if not contents:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+        max_size = 20 * 1024 * 1024  # 20MB
+        if len(contents) > max_size:
+            raise HTTPException(
+                status_code=400, detail="File too large. Maximum size is 20MB"
+            )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            base_name = os.path.basename(filename)
+            if not base_name.lower().endswith(".pdf"):
+                base_name += ".pdf"
+
+            temp_pdf_path = os.path.join(temp_dir, base_name)
+            with open(temp_pdf_path, "wb") as pdf_file:
+                pdf_file.write(contents)
+
+            public_id = f"upload_{uuid.uuid4()}_{'_'.join(base_name.split('.')[:-1])}"
+            pdf_url = upload_to_cloudinary(temp_pdf_path, public_id, type="pdf")
+
+            if not pdf_url:
+                raise HTTPException(status_code=500, detail="Failed to upload PDF")
+
+            return {
+                "status": "success",
+                "message": "PDF uploaded successfully",
+                "data": {"url": pdf_url},
+            }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
