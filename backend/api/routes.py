@@ -263,5 +263,7 @@ async def download_pdf(request: DownloadPDFRequest):
                 "message": "PDF Ready",
                 "data": {"pdf_url": pdf_url},
             }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -11,13 +11,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def download_and_highlight_pdf(url: str, highlights: dict) -> bool:
+def download_and_highlight_pdf(url: str, highlights: dict) -> tuple:
     """
     Download a PDF from URL, highlight specified text, and save both original and highlighted versions.
 
     :param url: The URL of the PDF file to be downloaded
     :param highlights: Dictionary of highlights for each page
-    :return: True if successful, False otherwise
+    :return: (True, original_filename, highlighted_filepath) if successful, (False, None, None) otherwise
     """
     try:
         response = requests.get(url, stream=True, timeout=10)
@@ -42,7 +42,7 @@ def download_and_highlight_pdf(url: str, highlights: dict) -> bool:
             for page_num, sentences_to_highlight in highlights.items():
                 if page_num < 0 or page_num >= len(doc):
                     logger.error(f"Invalid page number. PDF has {len(doc)} pages.")
-                    return False
+                    return False, None, None
 
                 page = doc[page_num]
                 text_instances = []
@@ -66,11 +66,11 @@ def download_and_highlight_pdf(url: str, highlights: dict) -> bool:
             logger.error(
                 f"Failed to download file. Status code: {response.status_code}"
             )
-            return False
+            return False, None, None
 
     except requests.RequestException as e:
         logger.error(f"Download error: {e}")
-        return False
+        return False, None, None
     except Exception as e:
         logger.error(f"Processing error: {e}")
-        return False
+        return False, None, None
