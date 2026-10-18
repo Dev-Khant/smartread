@@ -75,12 +75,15 @@ def get_page(url: str, page_number: int):
         {"document_id": document_id, "page_number": page_number}
     )
 
-    if page_data and "page_data" in page_data and "content" in page_data["page_data"]:
+    if not page_data:
+        return None, None
+
+    if "page_data" in page_data and "content" in page_data["page_data"]:
         page_data["page_data"]["content"] = base64.b64decode(
             page_data["page_data"]["content"]
         ).decode()
 
-    return page_data, 15
+    return page_data, page_data.get("total_pages")
 
 
 def get_highlights(url: str):
